@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Read Local JSON File</title>
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.0.0/math.js" integrity="sha512-rffRpOvP8/vOkbpVUpjesEh2AI40+pNcMh0LAAdOKBE96pLnJh1IGKGhu/RL5lrmW8fA9p5ph5GkCOlMNXr3eg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script></head>
+<body>
+<input type="text" id="textInput" placeholder="Enter text to encode">
+<input type="range" id="outputSlider" min="1" max="200" value="50" step="1">
+<button id="encodeButton">Click me</button>
+<p>Current Value: <span id="sliderValue">50</span></p>
+<div id="result"></div>
+<script>
+    const slider = document.getElementById('outputSlider');
+    const output = document.getElementById('sliderValue');
+    let max_gen = 50;
+
+    slider.oninput = function() {
+        output.innerHTML = this.value;
+        max_gen = this.value;
+    }
+    // Async function to fetch and read a JSON file
+    async function loadJsonFile(url) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching the JSON file:', error);
+            return null; // Return null or appropriate default value in case of an error
+        }
+    }
+
+    // URL of the JSON file
+    const jsonFileUrl1 = 'stoi.json';
+    const jsonFileUrl2 = 'itos.json';
+
+
+    // Variable to store the JSON data
+    let stoi = null;
+    let itos = null;
+    let session = null;
+
+    window.onload = async function() {
+        // Call the function and assign the data to the variable
+        stoi = await loadJsonFile(jsonFileUrl1);
+        console.log("JSON Data Loaded:", stoi);
+        itos = await loadJsonFile(jsonFileUrl2);
+        console.log("JSON Data Loaded:", itos);
+        session = await ort.InferenceSession.create('./lumiere.onnx');
+        console.log("Session created:", session);
+
+    };
+    function encodeSentence(sentence, dictionary) {
+        let encodedSentence = [];
+        for (let char of sentence) {
+            if (dictionary[char]) {
+                const index = dictionary[char];
+                encodedSentence.push(index);
+            } else {
+                encodedSentence.push(char);
+            }
+        }
+        console.log('-------------------')
+        console.log(encodedSentence)
+        return encodedSentence;
+    }
+    function multinomial(weights, numSamples) {
+        let outcomes = [];
+    
+        for (let i = 0; i < numSamples; i++) {
+    
+            let randomNum = Math.random();
+            let sum = 0;
+    
+            for (let j = 0; j < weights.length; j++) {
+                sum += weights[j];
+                if (randomNum < sum) {
+                    outcomes.push(j);
+                    break;
+                }
+            }
+        }
+        
+        return outcomes;
+    }
+    function softmax(arr) {
+        const maxLogit = Math.max(...arr);
+        const exps = arr.map(e => Math.exp(e - maxLogit)); // Subtract maxLogit for numerical stability
+        const sumExps = exps.reduce((a, b) => a + b, 0);
+        return exps.map(e => e / sumExps);
+    }
+    async function predict(sentence){
+        // prepare inputs. a tensor need its corresponding TypedArray as data
+        const dataA = Int32Array.from(sentence);
+        const tensorA = new ort.Tensor('int32', dataA, [1, dataA.length]);
+
+        // prepare feeds. use model input names as keys.
+        const feeds = {input: tensorA};
+
+        // feed inputs and run
+        const results = await session.run(feeds);
+
+        // read from results
+        let output = results.output.data.slice(-results.output.dims[2]-1, -1)
+        
+        let index = output.indexOf(Math.max(...output));
+        console.log(index)
+        return index
+    }
+    // Function to loop over async operations
+    async function runAsyncLoop(encodedText, max_gen) {
+        for (let i = 0; i < max_gen; i++) {
+            let result = await predict(encodedText);
+            encodedText.push(result);
+            console.log(encodedText)
+            console.log(result)
+            let decodedText = [];
+            decodedText = encodeSentence(encodedText, itos)
+            console.log(decodedText);
+            let ouput = decodedText.join('');
+            console.log(ouput);
+            document.getElementById('result').innerText = `Encoded Text: ${ouput}`;
+        }
+    }
+    document.getElementById('encodeButton').addEventListener('click', () => {
+        if (!stoi) {
+            alert('Dictionary is not loaded yet!');
+            return;
+        }
+
+        const inputText = document.getElementById('textInput').value;
+        let encodedText = encodeSentence(inputText, stoi);
+        console.log(max_gen);
+        console.log(encodedText)
+        runAsyncLoop(encodedText, max_gen);
+    });
+    // Example usage
+    
+</script>
+
+</body>
+</html>

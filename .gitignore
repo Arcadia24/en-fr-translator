@@ -1,3 +1,7 @@
 __pycache__/
 .vscode/
 .venv/
+en-fr.json
+model_1_quantized.onnx
+model_1.onnx
+saved_model_tokenizer_3.pth

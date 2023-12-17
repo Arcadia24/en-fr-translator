@@ -27,8 +27,10 @@ async function loadJsonFile(url) {
 
 window.onload = async function() {
     tokenToIndexMapping = await loadJsonFile(jsonFileUrl1);
+    btn.innerHTML = "Wait"
     console.log("JSON Data Loaded:", tokenToIndexMapping);
     session = await ort.InferenceSession.create('model_1_quantized.onnx');
+    btn.innerHTML = "Start translation"
     console.log("Session created:", session);
         // Example Usage
     tokenizer = new BPE_Tokenizer();
@@ -41,9 +43,11 @@ window.onload = async function() {
     console.log("Detokenized Text:", detokenizedText);
 
     pad_token = tokenizer.tokenize("<PAS>");
-    sos_token = tokenizer.tokenize("<EOS>");
+    sos_token = tokenizer.tokenize("<SOS>");
     eos_token = tokenizer.tokenize("<EOS>");
-
+    console.log(pad_token);
+    console.log(sos_token);
+    console.log(eos_token);
 };
 // Async function to fetch and read a JSON file
 class BPE_Tokenizer {
@@ -131,7 +135,7 @@ function softmax(arr)
 }
 function createsourceMask(inputSrc, padIdx) {
     // Step 1: Create a boolean mask
-    let mask = inputSrc.map(element => element !== padIdx);
+    let mask = inputSrc.map(element => element !== padIdx[0]);
 
     // Step 2: In JavaScript, we typically don't deal with dimensions in the same way,
     // especially with regular arrays. If you're using a tensor library, you might need
@@ -156,7 +160,7 @@ function causalMask(seqLen) {
 
 function createtargetMask(inputTgt, padIdx, seqLen) {
     // Create the initial mask based on padIdx
-    let initialMask = inputTgt.map(element => element !== padIdx ? 1 : 0);
+    let initialMask = inputTgt.map(element => element !== padIdx[0] ? 1 : 0);
 
     // Create the causal mask
     let cMask = causalMask(seqLen);
@@ -181,12 +185,10 @@ async function predict(source, target){
 
     let source_mask_input = createsourceMask(source, pad_token);
     let target_mask_input = createtargetMask(target, pad_token, target.length);
-    console.log(target_mask_input);
+
     source_mask_input = Uint8Array.from(source_mask_input);
     target_mask_input = Uint8Array.from(target_mask_input);
 
-    console.log(target_array);
-    console.log(target_mask_input);
     const Tsource = new ort.Tensor('int64', source_array, [1, source_array.length]);
     const Ttarget = new ort.Tensor('int64', target_array, [1, target_array.length]);
     const Tsource_mask = new ort.Tensor('bool', source_mask_input, [1, 1, 1, source_mask_input.length]);
@@ -206,32 +208,40 @@ async function predict(source, target){
     console.log(feeds);
     // feed inputs and run
     let res = await session.run(feeds)
-    let output = res.output.data.slice(-res.output.dims[2]-1, -1)
+    console.log(res.output.data.slice(-1211,-1));
+    let output = res.output.data.slice(-1211,-1);
         
     let index = output.indexOf(Math.max(...output));
     return index;
 }
 // Function to loop over async operations
 async function runAsyncLoop(encodedText, max_gen) {
-    let source_input = [...sos_token, ...encodedText, ...eos_token];
+    let source_input = []; 
+    source_input = [...sos_token, ...encodedText, ...eos_token];
     source_input.push(...Array(100 - source_input.length).fill(...pad_token));
-    let target = sos_token;
-    running = true
-    btn.innerHTML = running ? "Wait" : "Start Translate"
+    let target = [];
+    target = sos_token;
+    running = true;
+    btn.innerHTML = "Wait";
 
-    for (let i = 0; (i < max_gen & target[-1]!= eos_token[0]); i++) {
+    for (let i = 0; (i < max_gen ); i++) {
         let result = await predict(source_input, target);
         target.push(result);
         console.log(target)
         console.log(result)
+        if (result == eos_token[0]) {
+            break;
+        }
         let ouput = tokenizer.detokenize(target.slice(1, -1));
         console.log(ouput);
-        frenchcase.innerText = `Encoded Text: ${ouput}`;
+        frenchcase.innerHTML = ouput;
     }
+    btn.innerHTML = "Finsihed";
 }
 const write = () => {
+    frenchcase.innerHTML = "";
     const inputText = document.getElementById('englishInput').value;
-    let encodedText = tokenizer.tokenize(inputText);
+    const  encodedText = tokenizer.tokenize(inputText);
     console.log(max_gen);
     console.log(encodedText)
     runAsyncLoop(encodedText, max_gen).then(() => {
@@ -243,11 +253,11 @@ const write = () => {
 
 const writeToggle = () => {
     if (!tokenizer) {
-        alert('Dictionary is not loaded yet!');
+        alert('Model not loaded yet');
         return;
     }
-    running = !running
-    btn.innerHTML = running ? "Wait" : "Start Translate"
+    running = true;
+    btn.innerHTML = "Wait"
     if (running) { write() }
 }
 btn.addEventListener("click", writeToggle)

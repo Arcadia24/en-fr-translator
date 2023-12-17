@@ -1,6 +1,8 @@
 # Overview
 This project is an English to French translation tool, leveraging a transformer model to achieve efficient and accurate translations. Designed to handle the complexities of language translation, this tool is ideal for various applications where quick and reliable translation between English and French is required.
 
+The link to the demo: https://arcadia24.github.io/en-fr-translator
+
 # Dataset
 
 This projectuse the [opus book dataset](https://huggingface.co/datasets/opus_books/viewer/en-fr) on HugginFace.

@@ -1,0 +1,69 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: rgb(55, 55, 95);
+    color: rgb(201, 189, 189);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    text-align: center;
+    width: 80%;
+}
+
+.header-box {
+    border: 2px solid white;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2em;
+}
+
+header p {
+    font-style: italic;
+    margin-bottom: 20px;
+}
+
+.translator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+
+textarea {
+    width: 200px;
+    height: 100px;
+    padding: 10px;
+}
+
+#frenchOutput {
+    background-color: #f0f0f0;
+    color: black;
+}
+
+.arrow {
+    font-size: 24px;
+    color: white;
+}
+
+button#translateButton {
+    background-color: white;
+    color: blue;
+    border: none;
+    padding: 10px 20px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    font-size: 1em;
+}
+
+button#translateButton:hover {
+    background-color: lightblue;
+}

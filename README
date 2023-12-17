@@ -1,0 +1,22 @@
+# Overview
+This project is an English to French translation tool, leveraging a transformer model to achieve efficient and accurate translations. Designed to handle the complexities of language translation, this tool is ideal for various applications where quick and reliable translation between English and French is required.
+
+# Dataset
+
+This projectuse the [opus book dataset](https://huggingface.co/datasets/opus_books/viewer/en-fr) on HugginFace.
+
+# Transformer Model Specifications
+The core of this translator is a transformer model, characterized by the following parameters:
+
+- **Vocabulary Size**: 1210
+- **Number of Heads**: 6
+- **Embedding Size**: 600
+- **Context Length**: 100
+- **Dropout Rate**: 0.1
+- **Number of Layers**: 6
+
+# Tokenization
+The translator utilizes two types of tokenizers:
+
+- **Character-Level Tokenizer**: This tokenizer breaks text down to the character level, providing a granular approach to translation. With this tokenizer, the model achieves a loss of 1.5, indicating a higher level of generalization.
+- **Subword (BPE) Tokenizer**: The Byte Pair Encoding (BPE) tokenizer works at the subword level, offering a balance between word-level and character-level tokenization. This approach results in a lower loss of 0.8, suggesting more precise translations.
